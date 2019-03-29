@@ -1,0 +1,18 @@
+Package: harpSpatial
+Type: Package
+Title: Utilities for HARP spatial verification
+Version: 0.0.0.9000
+Date: 2019-03-28
+Authors@R: as.person(c(
+    "Alex Deckmyn <alex.deckmyn@meteo.be> [aut, cre]",
+    "Andrew Singleton <andrewts@met.no> [aut]" 
+  ))
+Description: Spatial verification code for HARP
+Maintainer: Alex Deckmyn <alex.deckmyn@meteo.be>
+Depends:
+  R (>= 3.5.0), meteogrid (>= 3.7.5)
+License: MIT + file LICENSE
+Encoding: UTF-8
+Imports: Rcpp (>= 0.12.6)
+LinkingTo: Rcpp
+RoxygenNote: 6.1.1
