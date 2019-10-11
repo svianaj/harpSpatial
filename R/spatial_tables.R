@@ -18,8 +18,6 @@ spatial_score_table <- function(tab) {
   result <- list(name=tab,
                  fields = c(standard_fields, columns),
                  primary = names(standard_fields))
-  # tibble template
-  result$template <- lapply(result$fields, function(x) switch(x, "CHARACTER"="NA_character_", "REAL"="NA_real_", NA))
   result
 }
 # TODO: info table, ...

@@ -10,7 +10,7 @@ verify_basic(obfield, fcfield)
 \item{obfield}{Observation grid.}
 
 \item{fcfield}{Forecast field
-return A named vector of scores}
+return A 1-row tibble of scores}
 }
 \description{
 Run spatial verification for 1 case
