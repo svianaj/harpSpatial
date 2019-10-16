@@ -57,6 +57,7 @@
 #'   All values must be odd integers (so the central point is really in the center of a box).
 #' @param sqlite_path If specified, SQLite files are generated and written to
 #'   this directory.
+#' @param sqlite_file Name of SQLite file.
 #' @param ... Arguments dependent on \code{file_format}, passed to to read_grid_interpolate.
 #'   (More info to be added).
 #'
@@ -89,6 +90,7 @@ verify_spatial <- function(
   box_sizes            = c(1, 3, 5, 11, 21), # box sizes must be odd!
   thresholds           = c(0.1, 1, 5, 10),
   sqlite_path          = NULL,
+  sqlite_file          = "harp_spatial_scores.sqlite",
   return_data          = TRUE,
   ...)
 {
@@ -140,8 +142,8 @@ verify_spatial <- function(
   init <- list()
 
   # The read functions
-  # FIXME: most read functions can't deal with accumulated parameters like AccPcp1h
-  # we will need special "accumulator functions"
+  # Most read functions can't deal with accumulated parameters like AccPcp1h
+  # We will need special "accumulator functions"
 
   get_ob <- function(obdate) {
     obfile <- get_filenames(file_date = format(obdate, "%Y%m%d%H"),
@@ -296,14 +298,17 @@ verify_spatial <- function(
 
       # Basic (non-threshold)
       sc <- verify_basic(obfield, fcfield)
-      scores[["basic"]]$fcdate[case]   <- fcdate
+#      scores[["basic"]]$fcdate[case]   <- as.numeric(fcdate)
+      scores[["basic"]]$fcdate[case]   <- as.numeric(format(fcdate, "%Y%m%d"))
+      scores[["basic"]]$fctime[case]   <- as.numeric(format(fcdate, "%H"))
       scores[["basic"]]$leadtime[case] <- ldt/lt_scale
       scores[["basic"]][case, names(sc)] <- sc
 
       # "fuzzy" (threshold & box_size)
       sc <- verify_fuzzy(obfield, fcfield, thresholds, box_sizes)
       intv <- seq_len(dim(sc)[1]) + (case - 1) * dim(sc)[1]
-      scores[["fuzzy"]]$fcdate[intv]   <- fcdate
+      scores[["fuzzy"]]$fcdate[intv]   <- as.numeric(format(fcdate, "%Y%m%d"))
+      scores[["fuzzy"]]$fctime[intv]   <- as.numeric(format(fcdate, "%H"))
       scores[["fuzzy"]]$leadtime[intv] <- ldt/lt_scale
       scores[["fuzzy"]][intv, names(sc)] <- sc
 
@@ -320,22 +325,30 @@ verify_spatial <- function(
 
   ## write to SQLite
   if (!is.null(sqlite_path)) {
-    db_file <- paste0(sqlite_path, "/harp_spatial.sqlite")
-    message("Writing to SQLite file ", db_file)
-    db <- harpIO:::dbopen(db_file)
-
-    for (sc in c("basic", "fuzzy")) {
-      # check for score table and create if necessary
-      harpIO:::create_table(db, sc, scores[[sc]],
-                            primary=c("model", "prm", "fcdate", "leadtime"))
-      harpIO:::dbwrite(db, sc, scores[[sc]][1:ncases,])
-    }
-
-    harpIO:::dbclose(db)
+    save_spatial_verif(scores, sqlite_path, sqlite_file)
   }
 
   if (return_data) invisible(scores)
   else invisible(NULL)
 }
+#' Save spatial scores to SQLite
+#' @param scores A list of spatial score tables
+#' @param sqlite_path The path for the sqlite file
+#' @param sqlite_file The file to which the tables are written or added
+#' @export
+save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
+    db_file <- paste(sqlite_path, sqlite_file, sep="/")
+    message("Writing to SQLite file ", db_file)
+    db <- harpIO:::dbopen(db_file)
+    for (sc in names(scores)) {
+      # check for score table and create if necessary
+      tab <- spatial_score_table(sc)
+      harpIO:::create_table(db, tab$name, tab$fields, tab$primary)
+      ok <- !is.na(scores[[sc]][, "fcdate"])
+      cat(sc, ":", dim(scores[[sc]])[1], length(ok), "\n")
+      harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
+    }
 
+    harpIO:::dbclose(db)
+}
 

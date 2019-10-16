@@ -2,6 +2,7 @@
 
 export(SAL)
 export(sal_identify_objects)
+export(save_spatial_verif)
 export(verify_basic)
 export(verify_fuzzy)
 export(verify_spatial)

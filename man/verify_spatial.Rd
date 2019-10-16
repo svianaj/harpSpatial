@@ -13,7 +13,7 @@ verify_spatial(start_date, end_date, det_model, parameter,
   ob_interp_method = "closest", ob_accumulation = "15m",
   verif_domain = NULL, use_mask = FALSE, box_sizes = c(1, 3, 5, 11,
   21), thresholds = c(0.1, 1, 5, 10), sqlite_path = NULL,
-  return_data = TRUE, ...)
+  sqlite_file = "harp_spatial_scores.sqlite", return_data = TRUE, ...)
 }
 \arguments{
 \item{start_date}{Date of the first forecast to read.}
@@ -23,8 +23,7 @@ verify_spatial(start_date, end_date, det_model, parameter,
 \item{det_model}{The name of the deterministic model. Maybe expressed as a
 vector if more than one model is wanted.}
 
-\item{parameter}{The parameters to read as a character vector. For reading
-from vfld files, set to NULL to read all parameters.}
+\item{parameter}{The parameters to read as a character vector.}
 
 \item{lead_time}{The lead times to read as a numeric vector.}
 
@@ -32,25 +31,9 @@ from vfld files, set to NULL to read all parameters.}
 by a letter, where the letter gives the units - may be d for days, h for
 hours or m for minutes.}
 
-\item{use_mask}{If TRUE, a land/sea mask is used when interpolating. It must be
-available in the forecast files or in a clim_file.}
+\item{fc_file_path}{The top level path for the forecast files to read.}
 
-\item{box_sizes}{Scales used for fuzzy methods like FSS. A vector of odd box sizes.}
-
-\item{thresholds}{Thresholds used for FSS, ...}
-
-\item{sqlite_path}{If specified, SQLite files are generated and written to
-this directory.}
-
-\item{...}{Arguments dependent on \code{file_format}, passed to to read_XXX_interpolate.
-(More info to be added).}
-
-\item{file_path}{The top level path for the forecast files to read.}
-
-\item{file_format}{The format of the files to read. Can be "vfld", "grib" or
-"netcdf_met"}
-
-\item{file_template}{The file type to generate the template for. Can be
+\item{fc_file_template}{The file type to generate the template for. Can be
 "harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
 "harmonie_grib", "harmonie_grib_fp", "harmone_grib_sfx", "vfld", "vobs", or
 "fctable". If anything else is passed, it is returned unmodified. In this
@@ -62,18 +45,61 @@ for ensemble member where x is the length of the string including leading
 zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
 will always be file_path/template.}
 
-\item{clim_file}{A file containing constant data for the domain:
-topology, land/sea mask.}
+\item{fc_file_format}{The format of the files to read. Can be e.g. "fa" or "grib".}
 
-\item{clim_format}{The file format of the clim_file may be different
-than that of the forecast files.}
+\item{fc_options}{A list with format-specific options for the reader function.}
 
-\item{correct_T2m}{Whether to correct the 2m temperature forecast from the
-model elevation to the observation elevation.}
+\item{fc_interp_method}{Interpolation method to be used when transforming a forecast
+field to the verification grid.}
 
-\item{interpolation_method}{The method used for interpolating from forecast grid
-to station points. Default is "closest" (mearest neighbour).
-Alternatives include "bilin".}
+\item{fc_accumulation}{The accumulation type of the forecast. This is only used for
+accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
+from the start of the model run. Otherwise this should be a string containing a numerical value
+and a time unit, e.g. "15m" or "1h".}
+
+\item{ob_file_path}{The top level path for the forecast files to read.}
+
+\item{ob_file_template}{The file type to generate the template for. Can be
+"harmoneps_grib", "harmeoneps_grib_fp", "harmoneps_grib_sfx", "meps_met",
+"harmonie_grib", "harmonie_grib_fp", "harmone_grib_sfx", "vfld", "vobs", or
+"fctable". If anything else is passed, it is returned unmodified. In this
+case substitutions can be used. Available substitutions are {YYYY} for
+year, \{MM\} for 2 digit month with leading zero, \{M\} for month with no
+leading zero, and similarly \{DD\} or \{D\} for day, \{HH\} or \{H\} for
+hour, \{mm\} or \{m\} for minute. Also \{LDTx\} for lead time and \{MBRx\}
+for ensemble member where x is the length of the string including leading
+zeros - can be omitted or 2, 3 or 4. Note that the full path to the file
+will always be file_path/template.}
+
+\item{ob_file_format}{The format of the files to read. Can be e.g. "hdf5" or "grib".}
+
+\item{ob_options}{A list with format-specific options for the reader function.}
+
+\item{ob_interp_method}{Interpolation method to be used when transforming a forecast
+field to the verification grid.}
+
+\item{ob_accumulation}{The accumulation type of the observation (or reference). This is only used for
+accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
+from the start of the model run. That is probably rare for observations. 
+Otherwise this should be a string containing a numerical value
+and a time unit, e.g. "15m" or "1h".}
+
+\item{verif_domain}{A \code{geodomain} that defines the common verification grid.}
+
+\item{box_sizes}{Scales used for fuzzy methods like FSS. A vector of box sizes.
+All values must be odd integers (so the central point is really in the center of a box).}
+
+\item{thresholds}{Thresholds used for FSS, ...}
+
+\item{sqlite_path}{If specified, SQLite files are generated and written to
+this directory.}
+
+\item{sqlite_file}{Name of SQLite file.}
+
+\item{return_data}{= TRUE,}
+
+\item{...}{Arguments dependent on \code{file_format}, passed to to read_grid_interpolate.
+(More info to be added).}
 }
 \value{
 A list containting two data frames: \code{spatial_scores} and

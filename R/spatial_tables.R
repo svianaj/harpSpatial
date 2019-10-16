@@ -7,17 +7,20 @@
 
 spatial_score_table <- function(tab) {
   standard_fields <- c("model"="CHARACTER", "prm"="CHARACTER",
-                       "fcdate"="REAL", "leadtime"="REAL")
-
-  # BASIC:  scores without extra scales, thresholds etc.
-  column_names <- switch(tab,
-                    "basic" = c("ets", "hk", "f", "bias", "mse", "S", "A", "L"),
-                    "fuzzy" = c("scale", "threshold", "fss", "hk", "ets"),
+                       "fcdate"="REAL", "fctime"="REAL", "leadtime"="REAL")
+  extra_fields <- switch(tab,
+                         "basic" = character(0),
+                         "fuzzy" = c("scale"="REAL", "threshold"="REAL"),
                     stop("Unknown table specification ", tab))
-  columns <- structure(rep("REAL", length(column_names)), names=column_names)
+  # BASIC:  scores without extra scales, thresholds etc.
+  score_names <- switch(tab,
+                    "basic" = c("ets", "hk", "f", "bias", "mse", "S", "A", "L"),
+                    "fuzzy" = c("fss", "hk", "ets"),
+                    stop("Unknown table specification ", tab))
+  score_fields <- structure(rep("REAL", length(score_names)), names=score_names)
   result <- list(name=tab,
-                 fields = c(standard_fields, columns),
-                 primary = names(standard_fields))
+                 fields = c(standard_fields, extra_fields, score_fields),
+                 primary = c(names(standard_fields), names(extra_fields)))
   result
 }
 # TODO: info table, ...
