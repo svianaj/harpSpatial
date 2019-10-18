@@ -11,6 +11,7 @@
 #' @return A tibble with columns for threshold, window_size and various scores.
 #' @export
 verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes) {
+  # TODO: remove all SpatialVx code
   # fuzzy is needed for ETS
   # fss is needed for ... FSS :-)
   # multi.event is needed for HK (?)
@@ -20,19 +21,22 @@ verify_fuzzy <- function(obfield, fcfield, thresholds, window_sizes) {
   oo <- SpatialVx::make.SpatialVx(obfield, fcfield, thresholds=thresholds)
   # TODO: field.type="Preciptation" ???
   # we use our optimised Rcpp fastSmooth code
-  vv <- SpatialVx::hoods2d(oo, which.methods = vx_methods,
-                           smooth.fun = fastSmooth,
-                           levels = window_sizes)
+  vv <- SpatialVx::hoods2d(
+    oo,
+    which.methods = vx_methods,
+    smooth.fun = fastSmooth,
+    levels = window_sizes
+  )
 
   nthresh <- length(thresholds)
   nwin <- length(window_sizes)
 
   result <- tibble::tibble(
-                   threshold = rep(thresholds, each=nwin),
-                   scale     = rep(window_sizes, nthresh),
-                   ets       = as.vector(vv$fuzzy$ets),
-                   fss       = as.vector(vv$fss$values),
-                   hk        = as.vector(vv$multi.event$hk)
+    threshold = rep(thresholds, each=nwin),
+    scale     = rep(window_sizes, nthresh),
+    ets       = as.vector(vv$fuzzy$ets),
+    fss       = as.vector(vv$fss$values),
+    hk        = as.vector(vv$multi.event$hk)
   )
   result
 }
@@ -53,14 +57,16 @@ verify_basic <- function(obfield, fcfield) {
 #  bias <- sum(fcfield - obfield)
 # TODO ets, hk, f not yet written out
 # TODO: baserate, anomaly correlation (needs climatology...)
-  try(sal <- SAL(fcfield, obfield, min.rain=0.1))
+  try(sal <- SAL(fcfield, obfield, min.rain = 0.1))
 
   # put all together in a tibble
-  result <- tibble::tibble(bias  = s1$bias,
-                           mse   = s1$mse,
-                           S     = sal$S,
-                           A     = sal$A,
-                           L     = sal$L)
+  result <- tibble::tibble(
+    bias  = s1$bias,
+    mse   = s1$mse,
+    S     = sal$S,
+    A     = sal$A,
+    L     = sal$L
+  )
 
   result
 }

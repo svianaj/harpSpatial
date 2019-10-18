@@ -58,42 +58,40 @@
 #' @param sqlite_path If specified, SQLite files are generated and written to
 #'   this directory.
 #' @param sqlite_file Name of SQLite file.
-#' @param ... Arguments dependent on \code{file_format}, passed to to read_grid_interpolate.
-#'   (More info to be added).
+#' @param ... Not used at thispoint (more info to be added).
 #'
 #' @return A list containting two data frames: \code{spatial_scores} and
 #'   \code{spatial_threshold_scores}.
 #' @export
 
-verify_spatial <- function(
-  start_date,
-  end_date,
-  det_model,
-  parameter,
-  lead_time            = seq(0, 36, 3),
-  lt_unit              = "h",
-  by                   = "6h",
-  fc_file_path         = "",
-  fc_file_template     = "",
-  fc_file_format       = "fatar",
-  fc_options           = list(),
-  fc_interp_method     = "closest",
-  fc_accumulation      = NULL,
-  ob_file_path         = "",
-  ob_file_template     = "",
-  ob_file_format       = "hdf5",
-  ob_options           = list(),
-  ob_interp_method     = "closest",
-  ob_accumulation      = "15m",
-  verif_domain         = NULL,
-  use_mask             = FALSE,
-  box_sizes            = c(1, 3, 5, 11, 21), # box sizes must be odd!
-  thresholds           = c(0.1, 1, 5, 10),
-  sqlite_path          = NULL,
-  sqlite_file          = "harp_spatial_scores.sqlite",
-  return_data          = TRUE,
-  ...)
-{
+verify_spatial <- function(start_date,
+                           end_date,
+                           det_model,
+                           parameter,
+                           lead_time            = seq(0, 36, 3),
+                           lt_unit              = "h",
+                           by                   = "6h",
+                           fc_file_path         = "",
+                           fc_file_template     = "",
+                           fc_file_format       = "fatar",
+                           fc_options           = list(),
+                           fc_interp_method     = "closest",
+                           fc_accumulation      = NULL,
+                           ob_file_path         = "",
+                           ob_file_template     = "",
+                           ob_file_format       = "hdf5",
+                           ob_options           = list(),
+                           ob_interp_method     = "closest",
+                           ob_accumulation      = "15m",
+                           verif_domain         = NULL,
+                           use_mask             = FALSE,
+                           box_sizes            = c(1, 3, 5, 11, 21),
+                           thresholds           = c(0.1, 1, 5, 10),
+                           sqlite_path          = NULL,
+                           sqlite_file          = "harp_spatial_scores.sqlite",
+                           return_data          = TRUE) {
+
+  # TODO: we may need more options! masked interpolation, options by score, 
   prm <- harpIO::parse_harp_parameter(parameter)
   by_secs <- harpIO:::units_multiplier(by) * readr::parse_number(by)
 
@@ -113,11 +111,11 @@ verify_spatial <- function(
   #     the accumulation time. Otherwise zero.
 
   # some date handling first : create vectors of date_time class
-  sdate <- lubridate::ymd_hm(start_date, tz="UTC", truncated=4)
+  sdate <- lubridate::ymd_hm(start_date, tz = "UTC", truncated = 4)
   if (missing(end_date)) {
     edate <- sdate
   } else {
-    edate <- lubridate::ymd_hm(end_date, tz="UTC", truncated=4)
+    edate <- lubridate::ymd_hm(end_date, tz = "UTC", truncated = 4)
     # add the last fc hour if the date is just YYYYMMDD
     if (nchar(end_date) < 10) edate <- edate + (24 * 3600 / by_secs - 1) * by_secs
   }
@@ -129,15 +127,16 @@ verify_spatial <- function(
   if (prm$accum > 0) {
     lead_time <- lead_time[which(lead_time >= prm$accum & lead_time %% prm$accum == 0)]
   }
-  all_fc_dates <- seq(as.numeric(sdate), as.numeric(edate), by_secs) %>% 
-                      lubridate::as_datetime()
+  all_fc_dates <- 
+    seq(as.numeric(sdate), as.numeric(edate), by_secs) %>% 
+      lubridate::as_datetime()
   all_ob_dates <- (rep(all_fc_dates, each=length(lead_time)) + lead_time ) %>%
-                      unique() %>%
-                      sort()
+    unique() %>%
+    sort()
 
-  message(paste(all_fc_dates, collapse=" "))
-  message(paste(all_ob_dates, collapse=" "))
-  message(paste(lead_time / lt_scale, collapse=" "))
+  message(paste(all_fc_dates, collapse = " "))
+  message(paste(all_ob_dates, collapse = " "))
+  message(paste(lead_time / lt_scale, collapse = " "))
   # the re-gridding weights will come here:
   init <- list()
 
@@ -146,27 +145,30 @@ verify_spatial <- function(
   # We will need special "accumulator functions"
 
   get_ob <- function(obdate) {
-    obfile <- get_filenames(file_date = format(obdate, "%Y%m%d%H"),
-                            file_path = ob_file_path,
-                            file_template=ob_file_template,
-                            parameter = parameter)
+    obfile <- get_filenames(
+      file_date     = format(obdate, "%Y%m%d%H"),
+      file_path     = ob_file_path,
+      file_template = ob_file_template,
+      parameter     = parameter
+    )
     message("reading ", obfile)
     do.call(harpIO::read_grid, 
-            c(list(filename=obfile, file_format=ob_file_format,
+      c(list(filename=obfile, file_format=ob_file_format,
                    parameter = parameter), ob_options))
   }
 
   get_fc <- function(fcdate, lead_time) {
-    fcfile <- get_filenames(file_date = fcdate,
-                            lead_time = lead_time,
-                            parameter = parameter,
-                            det_model = det_model,
-                            file_path = fc_file_path,
-                            file_template = fc_file_template)
+    fcfile <- get_filenames(
+      file_date = fcdate,
+      lead_time = lead_time,
+      parameter = parameter,
+      det_model = det_model,
+      file_path = fc_file_path,
+      file_template = fc_file_template)
     message("reading ", fcfile, "lead_time ", lead_time)
     do.call(harpIO::read_grid,
-            c(list(filename=fcfile, file_format=fc_file_format, 
-                   parameter = parameter, lead_time=lead_time),
+      c(list(filename = fcfile, file_format = fc_file_format, 
+                   parameter = parameter, lead_time = lead_time),
                        fc_options))
   }
   # We will write to SQL only at the end (more efficient),
@@ -177,7 +179,7 @@ verify_spatial <- function(
   # Most efficient (?): create full table at the start
   # it may be too long if there are missing cases, but that is not so bad
 
-  scores <- list()
+  scores <- if (return_scores) list() else NULL
   for(sc in c("basic", "fuzzy")) {
     t1 <- spatial_score_table(sc)
     nrows <- switch(sc,
@@ -232,9 +234,10 @@ verify_spatial <- function(
     if (!is.null(ob_interp_method)) {
       if (is.null(init$regrid_ob)) {
         message("Initialising ob regridding.")
-        init$regrid_ob <- meteogrid::regrid.init(olddomain = obfield,
-                                                 newdomain = verif_domain,
-                                 method = ob_interp_method)
+        init$regrid_ob <- meteogrid::regrid.init(
+          olddomain = obfield,
+          newdomain = verif_domain,
+          method    = ob_interp_method)
       }
       obfield <- meteogrid::regrid(obfield, weights = init$regrid_ob)
     }
@@ -243,13 +246,15 @@ verify_spatial <- function(
     # intersect drops the POSIXct class
     # valid_fc_dates <- intersect(obdate - lead_time, all_fc_dates)
     valid_fc_dates <- (obdate - lead_time)[which((obdate - lead_time) %in% all_fc_dates)]
-    message("valid FC dates: ", paste(valid_fc_dates, collapse=" "))
+    message("valid FC dates: ", paste(valid_fc_dates, collapse = " "))
     # inner loop
     for (fc in seq_along(valid_fc_dates)) {
       fcdate <- valid_fc_dates[fc]
       ldt <- (as.numeric(obdate) - as.numeric(fcdate)) # in seconds !
-      message("   +++ fcdate = ", format(fcdate,"%Y%m%d-%H%M"),
-              " +++ ldt = ", ldt/lt_scale, lt_unit)
+      message(
+        "   +++ fcdate = ", format(fcdate,"%Y%m%d-%H%M"),
+        " +++ ldt = ", ldt / lt_scale, lt_unit
+      )
 
       fcfield <- get_fc(fcdate, ldt/lt_scale)
       if (inherits(fcfield, "try-error")) { # e.g. missing forecast run
@@ -257,37 +262,38 @@ verify_spatial <- function(
                                      .immediate = TRUE)
         next
       }
-      # TODO: what if the forecast model needs "accumulating" rather than "decumulating"
-      #       e.g. when verifying INCA against radar
       if (prm$accum > 0) {
         if (is.null(fc_accumulation) || fc_accumulation < 0) {
-          if (ldt > prm$accum) { # if ldt==accum, you don't need to de-cumulate
-            fcfield <- fcfield - get_fc(fcdate, (ldt - prm$accum)/lt_scale)
+          if (ldt > prm$accum) { # if ldt==accum, you don't need to decumulate
+            fcfield <- fcfield - get_fc(fcdate, (ldt - prm$accum) / lt_scale)
           }
         } else {
-          stop("Can not (yet) create accumulated field ", parameter,
-               " from model output fc_accumulation ", fc_accumulation)
-          fstep <- readr::parse_number(fc_accumulation) * harpIO:::units_multiplier(fc_accumulation)
+          # In rare cases the forecast model needs "accumulating" rather than "decumulating"
+          #       e.g. when verifying INCA against radar
+          fstep <- readr::parse_number(fc_accumulation) * 
+            harpIO:::units_multiplier(fc_accumulation)
           if (fstep == prm$accum) { # this is easy !
           # nothing to do
           } else if  (fstep > prm$accum) { # this is easy !
-            stop("The chosen accumulation time is smaller than that of the forecasts!")
+            stop("The chosen accumulation time is smaller than what is available in the forecasts!")
           } else {
             nstep <- prm$accum / fstep
-            for (i in 1:(nstep-1)) {
-              fcfield <- fcfield + get_fc(fcdate, (ldt - i*fstep)/lt_scale)
+            for (i in 1:(nstep - 1)) {
+              fcfield <- fcfield + get_fc(fcdate, (ldt - i * fstep) / lt_scale)
             }
           }
-
         }
       }
       # convert forecast to common verification grid
       if (!is.null(fc_interp_method)) {
         if (is.null(init$regrid_fc)) {
           message("Initialising fc regridding.")
-          init$regrid_fc <- meteogrid::regrid.init(olddomain = fcfield,
-                                                   newdomain = verif_domain,
-                                   method = fc_interp_method)
+          init$regrid_fc <- 
+            meteogrid::regrid.init(
+              olddomain = fcfield,
+              newdomain = verif_domain,
+              method = fc_interp_method
+            )
         }
         fcfield <- meteogrid::regrid(fcfield, weights = init$regrid_fc)
       }
@@ -309,7 +315,7 @@ verify_spatial <- function(
       intv <- seq_len(dim(sc)[1]) + (case - 1) * dim(sc)[1]
       scores[["fuzzy"]]$fcdate[intv]   <- as.numeric(format(fcdate, "%Y%m%d"))
       scores[["fuzzy"]]$fctime[intv]   <- as.numeric(format(fcdate, "%H"))
-      scores[["fuzzy"]]$leadtime[intv] <- ldt/lt_scale
+      scores[["fuzzy"]]$leadtime[intv] <- ldt / lt_scale
       scores[["fuzzy"]][intv, names(sc)] <- sc
 
       case <- case + 1
@@ -337,18 +343,18 @@ verify_spatial <- function(
 #' @param sqlite_file The file to which the tables are written or added
 #' @export
 save_spatial_verif <- function(scores, sqlite_path, sqlite_file) {
-    db_file <- paste(sqlite_path, sqlite_file, sep="/")
-    message("Writing to SQLite file ", db_file)
-    db <- harpIO:::dbopen(db_file)
-    for (sc in names(scores)) {
-      # check for score table and create if necessary
-      tab <- spatial_score_table(sc)
-      harpIO:::create_table(db, tab$name, tab$fields, tab$primary)
-      ok <- !is.na(scores[[sc]][, "fcdate"])
-      cat(sc, ":", dim(scores[[sc]])[1], length(ok), "\n")
-      harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
-    }
+  db_file <- paste(sqlite_path, sqlite_file, sep = "/")
+  message("Writing to SQLite file ", db_file)
+  db <- harpIO:::dbopen(db_file)
+  for (sc in names(scores)) {
+    # check for score table and create if necessary
+    tab <- spatial_score_table(sc)
+    harpIO:::create_table(db, tab$name, tab$fields, tab$primary)
+    ok <- !is.na(scores[[sc]][, "fcdate"])
+    cat(sc, ":", dim(scores[[sc]])[1], length(ok), "\n")
+    harpIO:::dbwrite(db, sc, scores[[sc]][ok, ])
+  }
 
-    harpIO:::dbclose(db)
+  harpIO:::dbclose(db)
 }
 
