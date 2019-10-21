@@ -11,6 +11,8 @@ Description: Spatial verification code for HARP
 Maintainer: Alex Deckmyn <alex.deckmyn@meteo.be>
 Depends:
   R (>= 3.4.0), meteogrid (>= 3.7.5)
+Remotes:
+  adeckmyn/meteogrid
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports: Rcpp (>= 0.12.6)
