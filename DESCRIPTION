@@ -1,8 +1,8 @@
 Package: harpSpatial
 Type: Package
 Title: Utilities for HARP spatial verification
-Version: 0.0.1.9001
-Date: 2019-10-12
+Version: 0.0.1.9002
+Date: 2020-01-30
 Authors@R: as.person(c(
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut, cre]",
     "Andrew Singleton <andrewts@met.no> [aut]" 

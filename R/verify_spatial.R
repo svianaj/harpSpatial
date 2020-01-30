@@ -179,7 +179,7 @@ verify_spatial <- function(start_date,
   # Most efficient (?): create full table at the start
   # it may be too long if there are missing cases, but that is not so bad
 
-  scores <- if (return_scores) list() else NULL
+  scores <- if (return_data) list() else NULL
   for(sc in c("basic", "fuzzy")) {
     t1 <- spatial_score_table(sc)
     nrows <- switch(sc,
