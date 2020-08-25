@@ -1,8 +1,8 @@
 Package: harpSpatial
 Type: Package
 Title: Utilities for HARP spatial verification
-Version: 0.0.1.9002
-Date: 2020-06-24
+Version: 0.0.1.9003
+Date: 2020-08-25
 Authors@R: as.person(c(
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut, cre]",
     "Andrew Singleton <andrewts@met.no> [aut]" 
@@ -19,7 +19,6 @@ Encoding: UTF-8
 Imports:
     Rcpp (>= 0.12.6),
     meteogrid (>= 3.8.4),
-    SpatialVx,
     tibble,
     lubridate,
     readr

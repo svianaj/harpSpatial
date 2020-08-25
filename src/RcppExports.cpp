@@ -29,15 +29,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// windowMeanFromCumsum
-NumericMatrix windowMeanFromCumsum(NumericMatrix indat, NumericVector radius);
-RcppExport SEXP _harpSpatial_windowMeanFromCumsum(SEXP indatSEXP, SEXP radiusSEXP) {
+// window_mean_from_cumsum
+NumericMatrix window_mean_from_cumsum(NumericMatrix indat, int wsize);
+RcppExport SEXP _harpSpatial_window_mean_from_cumsum(SEXP indatSEXP, SEXP wsizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type indat(indatSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type radius(radiusSEXP);
-    rcpp_result_gen = Rcpp::wrap(windowMeanFromCumsum(indat, radius));
+    Rcpp::traits::input_parameter< int >::type wsize(wsizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(window_mean_from_cumsum(indat, wsize));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -53,12 +53,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// score_fss
+DataFrame score_fss(NumericMatrix fc, NumericMatrix ob, NumericVector thresholds, NumericVector window_sizes);
+RcppExport SEXP _harpSpatial_score_fss(SEXP fcSEXP, SEXP obSEXP, SEXP thresholdsSEXP, SEXP window_sizesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type fc(fcSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type ob(obSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type window_sizes(window_sizesSEXP);
+    rcpp_result_gen = Rcpp::wrap(score_fss(fc, ob, thresholds, window_sizes));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_harpSpatial_sal_identify_objects", (DL_FUNC) &_harpSpatial_sal_identify_objects, 3},
     {"_harpSpatial_cumsum2d", (DL_FUNC) &_harpSpatial_cumsum2d, 1},
-    {"_harpSpatial_windowMeanFromCumsum", (DL_FUNC) &_harpSpatial_windowMeanFromCumsum, 2},
+    {"_harpSpatial_window_mean_from_cumsum", (DL_FUNC) &_harpSpatial_window_mean_from_cumsum, 2},
     {"_harpSpatial_windowMean", (DL_FUNC) &_harpSpatial_windowMean, 2},
+    {"_harpSpatial_score_fss", (DL_FUNC) &_harpSpatial_score_fss, 4},
     {NULL, NULL, 0}
 };
 
