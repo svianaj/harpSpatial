@@ -10,11 +10,15 @@ cumsum2d <- function(indat) {
     .Call('_harpSpatial_cumsum2d', PACKAGE = 'harpSpatial', indat)
 }
 
-windowMeanFromCumsum <- function(indat, radius) {
-    .Call('_harpSpatial_windowMeanFromCumsum', PACKAGE = 'harpSpatial', indat, radius)
+window_mean_from_cumsum <- function(indat, wsize) {
+    .Call('_harpSpatial_window_mean_from_cumsum', PACKAGE = 'harpSpatial', indat, wsize)
 }
 
 windowMean <- function(indat, radius) {
     .Call('_harpSpatial_windowMean', PACKAGE = 'harpSpatial', indat, radius)
+}
+
+score_fss <- function(fc, ob, thresholds, window_sizes) {
+    .Call('_harpSpatial_score_fss', PACKAGE = 'harpSpatial', fc, ob, thresholds, window_sizes)
 }
 
