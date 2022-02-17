@@ -49,7 +49,7 @@
 #'   accumulated parameters (e.g. precipitation). NULL signifies that the field is accumulated
 #'   from the start of the model run. That is probably rare for observations. 
 #'   Otherwise this should be a string containing a numerical value
-#'   and a time unit, e.g. "15m" or "1h".
+#'   and a time unit, e.g. "15m" or "1h". "0" means an instantaneous value.
 #' @param verif_domain A \code{geodomain} that defines the common verification grid.
 #' @param return_data          = TRUE,
 #' @param thresholds Thresholds used for FSS, ...
@@ -70,10 +70,10 @@ verify_spatial <- function(start_date,
                            parameter,
                            lead_time            = seq(0, 36, 3),
                            lt_unit              = "h",
-                           by                   = "6h",
+                           by                   = "12h",
                            fc_file_path         = "",
                            fc_file_template     = "",
-                           fc_file_format       = "fatar",
+                           fc_file_format       = "fa",
                            fc_options           = list(),
                            fc_interp_method     = "closest",
                            fc_accumulation      = NULL,
@@ -144,17 +144,23 @@ verify_spatial <- function(start_date,
   # Most read functions can't deal with accumulated parameters like AccPcp1h
   # We will need special "accumulator functions"
 
+  # FIXME: also, we must MODIFY the parameter!
+  # - correct accumulation
+  # - maybe even a different field -> need a "modifier"???
+  # if (!is.null(ob_param$accum)
+  ob_param <- prm
+  ob_param$accum <- readr::parse_number(ob_accumulation) * 
+                    harpIO:::units_multiplier(ob_accumulation)
   get_ob <- function(obdate) {
     obfile <- get_filenames(
       file_date     = format(obdate, "%Y%m%d%H"),
       file_path     = ob_file_path,
       file_template = ob_file_template,
-      parameter     = parameter
+      parameter     = ob_param
     )
-    message("reading ", obfile)
     do.call(harpIO::read_grid, 
-      c(list(filename=obfile, file_format=ob_file_format,
-                   parameter = parameter), ob_options))
+      c(list(file_name=obfile, file_format=ob_file_format,
+                   parameter = ob_param), ob_options))
   }
 
   get_fc <- function(fcdate, lead_time) {
@@ -165,9 +171,8 @@ verify_spatial <- function(start_date,
       det_model = det_model,
       file_path = fc_file_path,
       file_template = fc_file_template)
-    message("reading ", fcfile, "lead_time ", lead_time)
     do.call(harpIO::read_grid,
-      c(list(filename = fcfile, file_format = fc_file_format, 
+      c(list(file_name = fcfile, file_format = fc_file_format, 
                    parameter = parameter, lead_time = lead_time),
                        fc_options))
   }
@@ -203,7 +208,7 @@ verify_spatial <- function(start_date,
   case <- 1
   for (ob in seq_along(all_ob_dates)) {  # (obdate in all_ob_dates) looses POSIXct class
     obdate <- all_ob_dates[ob]
-    message("=====\nobdate:", format(obdate, "%Y%m%d-%H%M"))
+    message("=====\nobdate: ", format(obdate, "%Y%m%d-%H%M"))
     obfield <- get_ob(obdate)
     if (inherits(obfield, "try-error")) { # e.g. missing observation
       if (harpenv$verbose) cat("Observation not found. Skipping.\n")
@@ -246,7 +251,7 @@ verify_spatial <- function(start_date,
     # intersect drops the POSIXct class
     # valid_fc_dates <- intersect(obdate - lead_time, all_fc_dates)
     valid_fc_dates <- (obdate - lead_time)[which((obdate - lead_time) %in% all_fc_dates)]
-    message("valid FC dates: ", paste(valid_fc_dates, collapse = " "))
+    message("valid FC dates: ", paste(format(valid_fc_dates, "%Y%m%d-%H%M"), collapse = " "))
     # inner loop
     for (fc in seq_along(valid_fc_dates)) {
       fcdate <- valid_fc_dates[fc]
