@@ -160,7 +160,7 @@ verify_spatial <- function(start_date,
     )
     do.call(harpIO::read_grid, 
       c(list(file_name=obfile, file_format=ob_file_format,
-                   parameter = ob_param), ob_options))
+                   parameter = ob_param, file_format_opts = ob_options)))
   }
 
   get_fc <- function(fcdate, lead_time) {
@@ -173,8 +173,8 @@ verify_spatial <- function(start_date,
       file_template = fc_file_template)
     do.call(harpIO::read_grid,
       c(list(file_name = fcfile, file_format = fc_file_format, 
-                   parameter = parameter, lead_time = lead_time),
-                       fc_options))
+                   parameter = parameter, lead_time = lead_time,
+                       file_format_opts = fc_options)))
   }
   # We will write to SQL only at the end (more efficient),
   # Define the tables  and vectors at full size, so you don't have to add rows.
